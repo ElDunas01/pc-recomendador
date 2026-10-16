@@ -1,7 +1,22 @@
 <!doctype html><html lang="es"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1">
 <meta name="theme-color" content="#0b0b10"><title>PC Recomendador</title><link rel="icon" href="data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 64 64%22%3E%3Cdefs%3E%3ClinearGradient id=%22g%22 x1=%220%22 y1=%220%22 x2=%221%22 y2=%221%22%3E%3Cstop offset=%220%22 stop-color=%22%238b5cf6%22/%3E%3Cstop offset=%221%22 stop-color=%22%2322d3ee%22/%3E%3C/linearGradient%3E%3C/defs%3E%3Cg fill=%22none%22 stroke=%22url(%23g)%22 stroke-width=%224%22 stroke-linecap=%22round%22 stroke-linejoin=%22round%22%3E%3Crect x=%2214%22 y=%2214%22 width=%2236%22 height=%2236%22 rx=%229%22/%3E%3Cpath d=%22M26 6v8M38 6v8M26 50v8M38 50v8M6 26h8M6 38h8M50 26h8M50 38h8%22/%3E%3Cpath d=%22M24 33l6 6 11-12%22/%3E%3C/g%3E%3C/svg%3E"><link rel="stylesheet" href="styles.css"></head><body>
-<header class="top"><b class="logo"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><g fill="none" stroke="url(#lg)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="14" width="36" height="36" rx="9"/><path d="M26 6v8M38 6v8M26 50v8M38 50v8M6 26h8M6 38h8M50 26h8M50 38h8"/><path d="M24 33l6 6 11-12"/></g></svg><span><em>PC</em> Recomendador</span></b></header>
+<header class="top"><button type="button" class="logo" data-act="home" aria-label="PC Recomendador: volver al inicio"><svg aria-hidden="true" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64"><defs><linearGradient id="lg" x1="0" y1="0" x2="1" y2="1"><stop offset="0" stop-color="#8b5cf6"/><stop offset="1" stop-color="#22d3ee"/></linearGradient></defs><g fill="none" stroke="url(#lg)" stroke-width="4" stroke-linecap="round" stroke-linejoin="round"><rect x="14" y="14" width="36" height="36" rx="9"/><path d="M26 6v8M38 6v8M26 50v8M38 50v8M6 26h8M6 38h8M50 26h8M50 38h8"/><path d="M24 33l6 6 11-12"/></g></svg><span><em>PC</em> Recomendador</span></button></header>
 <div class="bar" aria-hidden="true"><span id="pg"></span></div>
-<main id="app" aria-live="polite"><noscript>Activa JavaScript para usar el recomendador.</noscript></main>
+<main id="app">
+<section class="screen" id="s-home"><h1 tabindex="-1">¡Hola! Encontremos tu PC ideal</h1><p class="lead">Te ayudo a encontrar la PC perfecta para tu día a día, sin tecnicismos y cuidando tu bolsillo. ¡Empecemos!</p><button type="button" class="big go" data-act="start">Comenzar →</button></section>
+<section class="screen" id="s-uso" hidden><h2 tabindex="-1">¿Para qué la vas a usar más?</h2><div class="opts">
+<button type="button" class="big" data-act="uso" data-v="jugar"><span>🎮</span>Jugar</button>
+<button type="button" class="big" data-act="uso" data-v="trabajar"><span>💼</span>Trabajar o estudiar</button>
+<button type="button" class="big" data-act="uso" data-v="basico"><span>🏠</span>Uso básico / casa</button></div>
+<button type="button" class="link" data-act="goto" data-v="home">← Atrás</button></section>
+<section class="screen" id="s-pres" hidden><h2 tabindex="-1">¿Cuánto quieres invertir?</h2><div class="opts">
+<button type="button" class="big" data-act="pres" data-v="eco"><span>🪙</span>Económico</button>
+<button type="button" class="big" data-act="pres" data-v="mid"><span>⚖️</span>Intermedio</button>
+<button type="button" class="big" data-act="pres" data-v="alto"><span>🚀</span>Alto</button></div>
+<button type="button" class="link" data-act="goto" data-v="uso">← Atrás</button></section>
+<section class="screen" id="s-load" hidden role="status"><div class="spin" aria-hidden="true"></div><h2 tabindex="-1">Analizando las mejores opciones…</h2><div class="ld"><i id="bar"></i></div></section>
+<section class="screen" id="s-res" hidden></section>
+<section class="screen" id="s-err" hidden><h2 tabindex="-1">Algo no salió bien 😕</h2><p class="lead">No pasa nada. Puedes intentarlo otra vez.</p><button type="button" class="big go" data-act="retry">Intentar de nuevo</button><button type="button" class="link" data-act="home">Volver al inicio</button></section>
+</main>
 <footer>Precios en pesos mexicanos (MXN) de publicaciones de Mercado Libre México. Disponibilidad y envío pueden variar.</footer>
-<script src="data/catalog.js"></script><script src="app.js"></script></body></html>
+<script src="data/catalog.js"></script><script src="js/precios.js"></script><script src="js/engine.js"></script><script src="js/app.js"></script></body></html>
