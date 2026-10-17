@@ -1,38 +1,262 @@
-(()=>{const $=s=>document.querySelector(s),E=PCR.engine,P=PCR.precios;
-const UN={jugar:'jugar',trabajar:'trabajar o estudiar',basico:'uso básico'},PN={eco:'Económico',mid:'Intermedio',alto:'Alto'};
-const IC={cpu:'<rect x="6" y="6" width="12" height="12" rx="2"/><path d="M9 2v4M15 2v4M9 18v4M15 18v4M2 9h4M2 15h4M18 9h4M18 15h4"/>',gpu:'<rect x="2" y="6" width="20" height="11" rx="2"/><circle cx="9" cy="11.5" r="3"/><circle cx="16" cy="11.5" r="2"/><path d="M5 20h6"/>',ram:'<rect x="2" y="7" width="20" height="9" rx="1.5"/><path d="M6 16v3M10 16v3M14 16v3M18 16v3M6 10h3"/>',sto:'<rect x="4" y="4" width="16" height="16" rx="3"/><circle cx="8" cy="16" r="1"/><path d="M12 8h5"/>'};
-const ico=k=>`<svg viewBox="0 0 24 24" aria-hidden="true">${IC[k]}</svg>`;
-const SC=['home','uso','pres','load','res','err'],PG={home:0,uso:33,pres:66,load:90,res:100,err:0};
-const st={uso:null,pres:null,type:'',res:[],busy:false,t:0};
-function show(n){if(!(n in PG))n='home';SC.forEach(s=>{$('#s-'+s).hidden=s!==n});$('#pg').style.width=PG[n]+'%';window.scrollTo(0,0);const h=$('#s-'+n).querySelector('h1,h2');if(h&&h.focus)h.focus();}
-function reset(){clearTimeout(st.t);Object.assign(st,{uso:null,pres:null,type:'',res:[],busy:false});show('home');}
-function compute(){const r=E.pick(st.uso,st.pres,st.type);if(!r.length)throw new Error('sin resultados');st.res=r;}
-function run(){if(st.busy)return;st.busy=true;show('load');const bar=$('#bar');bar.style.width='0';requestAnimationFrame(()=>requestAnimationFrame(()=>{bar.style.width='100%'}));
- st.t=setTimeout(()=>{try{compute();renderRes();show('res')}catch(e){show('err')}st.busy=false},2000);}
-const cb=c=>/Ryzen/.test(c)?'AMD':/Core/.test(c)?'Intel':'Procesador',gb=g=>/RTX|GeForce/.test(g)?'Nvidia':/Radeon|RX/.test(g)?'AMD':'Gráficos';
-function card([b,lab],i){const sto=String(b.sto).split(' '),bud=E.budget(st.pres);
- return `<article class="card ${i?'':'main'}"><span class="badge">${lab}</span><h3>${b.n}</h3><div class="parts">
- <div class="pt">${ico('cpu')}<small>${cb(b.cpu)}</small><b>${b.cpu}</b></div>
- <div class="pt">${ico('gpu')}<small>${gb(b.gpu)}</small><b>${b.gpu}</b></div>
- <div class="pt">${ico('ram')}<small>Memoria</small><b>${String(b.ram).replace(' ','')}</b></div>
- <div class="pt">${ico('sto')}<small>${sto.slice(2).join(' ')||'Almacenamiento'}</small><b>${sto.slice(0,2).join('')}</b></div></div>
- <p class="line">👍 ${b.pr[0]}</p><p class="line">⚠️ ${b.co[0]}</p>${bud<b.b[0]?'<p class="line">💸 Puede costar más de lo que elegiste.</p>':''}
- <div class="pr" data-q="${b.q}"><b>Consultando precio…</b><small></small><a target="_blank" rel="noopener" href="${P.search(b.q)}">Buscar en Mercado Libre (enlace de búsqueda, no una publicación verificada)</a></div></article>`;}
-const CH=[['','Automático'],['laptop','Laptop'],['desktop','Escritorio'],['tablet','Tablet']];
-function renderRes(){const g=$('#s-res');
- g.innerHTML=`<h2 tabindex="-1">Tu PC ideal</h2><p class="sub">Para ${UN[st.uso]||''} · presupuesto ${PN[st.pres]||''}</p>
- <div class="chips" role="group" aria-label="Tipo de equipo">${CH.map(([v,t])=>`<button type="button" class="chip" data-act="type" data-v="${v}" aria-pressed="${st.type===v}">${t}</button>`).join('')}</div>
- ${st.type==='tablet'?'<div class="note">Una tablet tiene límites: pocos juegos y programas de PC, y sus piezas no se actualizan.</div>':''}
- <div class="res">${st.res.map(card).join('')}</div>
- <div class="row"><button type="button" class="btn" data-act="again">🔀 Otra opción</button><button type="button" class="btn" data-act="home">Volver a empezar</button></div>`;
- g.querySelectorAll('.pr').forEach(async el=>{try{const it=await P.get(el.dataset.q);if(!el.isConnected)return;const b=el.querySelector('b'),s=el.querySelector('small'),a=el.querySelector('a');
-  if(it){b.textContent=P.fmt(it.mxn);s.textContent=`Precio publicado en México · consultado el ${it.date} · «${it.title}»`;a.href=it.url;a.textContent='Ver publicación en Mercado Libre';}
-  else{b.textContent='Precio no confirmado';s.textContent='No se pudo consultar Mercado Libre. Recomendado por características.';}}catch(e){}});}
-document.addEventListener('click',e=>{const b=e.target&&e.target.closest&&e.target.closest('[data-act]');if(!b)return;e.preventDefault();const a=b.dataset.act,v=b.dataset.v||'';
- try{if(a==='home')reset();else if(a==='start')show('uso');else if(a==='goto')show(v);
-  else if(a==='uso'){if(!(v in E.USOS))return;st.uso=v;show('pres');}
-  else if(a==='pres'){if(!(v in E.PRES)||!st.uso){show('uso');return;}st.pres=v;run();}
-  else if(a==='type'||a==='again'){if(a==='type')st.type=v;compute();renderRes();}
-  else if(a==='retry'){st.uso&&st.pres?run():reset();}}
- catch(err){show('err');}});
-show('home');})();
+'use strict';
+
+/* =====================================================================
+   1. BASE DE DATOS SIMULADA
+   Todos los precios son Number (MXN, aproximados). Se formatean solo al renderizar.
+   t = presupuestos donde aplica (eco | mid | high), u = usos (basic | work | gaming)
+   ===================================================================== */
+const row = (brand, big, detail, price, t = [], u = [], x = {}) => ({ brand, big, detail, price, t, u, ...x });
+const ALL_T = ['eco', 'mid', 'high'];
+const ALL_U = ['basic', 'work', 'gaming'];
+
+const DB = {
+  // igpu: trae gráficos integrados | ram: tipo de memoria que usa su plataforma
+  cpu: [
+    row('Intel', 'Core i3', '12100', 2900, ['eco'], ['basic', 'work'], { igpu: true, ram: 'DDR4' }),
+    row('AMD', 'Ryzen 5', '5600G', 3300, ['eco'], ['basic', 'work'], { igpu: true, ram: 'DDR4' }),
+    row('AMD', 'Ryzen 5', '5500', 2300, ['eco'], ['gaming'], { ram: 'DDR4' }),
+    row('Intel', 'Core i3', '12100F', 2300, ['eco'], ['gaming'], { ram: 'DDR4' }),
+    row('Intel', 'Core i5', '12400', 4200, ['mid'], ['basic', 'work'], { igpu: true, ram: 'DDR4' }),
+    row('AMD', 'Ryzen 5', '7600', 5300, ['mid'], ALL_U, { igpu: true, ram: 'DDR5' }),
+    row('Intel', 'Core i5', '12400F', 3500, ['mid'], ['gaming'], { ram: 'DDR4' }),
+    row('AMD', 'Ryzen 5', '5600', 3000, ['mid'], ['gaming'], { ram: 'DDR4' }),
+    row('AMD', 'Ryzen 7', '7700', 6900, ['high'], ALL_U, { igpu: true, ram: 'DDR5' }),
+    row('Intel', 'Core i7', '14700K', 9800, ['high'], ['work', 'gaming'], { igpu: true, ram: 'DDR5' }),
+    row('AMD', 'Ryzen 7', '7800X3D', 9500, ['high'], ['gaming'], { igpu: true, ram: 'DDR5' }),
+  ],
+  gpu: [
+    row('Procesador', 'Integrada', 'Ya viene incluida', 0, ALL_T, ['basic', 'work'], { integrated: true }),
+    row('NVIDIA', 'GTX 1650', '4 GB', 3300, ['eco'], ['gaming']),
+    row('AMD', 'RX 6500 XT', '4 GB', 3000, ['eco'], ['gaming']),
+    row('NVIDIA', 'RTX 3060', '12 GB', 6500, ['mid'], ['gaming']),
+    row('AMD', 'RX 7600', '8 GB', 6000, ['mid'], ['gaming']),
+    row('NVIDIA', 'RTX 4060', '8 GB', 7200, ['mid'], ['gaming']),
+    row('NVIDIA', 'RTX 4060 Ti', '8 GB', 9500, ['high'], ['work', 'gaming']),
+    row('AMD', 'RX 7800 XT', '16 GB', 12500, ['high'], ['gaming']),
+    row('NVIDIA', 'RTX 4070 Super', '12 GB', 15500, ['high'], ['gaming']),
+  ],
+  ram: [
+    row('Kingston', '16 GB', 'DDR4 3200 MHz', 3200, ['eco', 'mid'], ALL_U, { type: 'DDR4' }),
+    row('Corsair', '16 GB', 'DDR4 3200 MHz', 3600, ['eco', 'mid'], ALL_U, { type: 'DDR4' }),
+    row('Crucial', '16 GB', 'DDR4 3200 MHz', 3400, ['eco', 'mid'], ALL_U, { type: 'DDR4' }),
+    row('Kingston', '16 GB', 'DDR5 5600 MHz', 5200, ['mid', 'high'], ALL_U, { type: 'DDR5' }),
+    row('Corsair', '32 GB', 'DDR5 6000 MHz', 9500, ['high'], ['work', 'gaming'], { type: 'DDR5' }),
+  ],
+  ssd: [
+    row('Kingston', '500 GB', 'NV2 NVMe', 900, ['eco'], ALL_U),
+    row('WD', '1 TB', 'Blue SN580 NVMe', 1500, ['eco', 'mid'], ALL_U),
+    row('Crucial', '1 TB', 'P3 Plus NVMe', 1600, ['mid'], ALL_U),
+    row('WD', '1 TB', 'Black SN770 NVMe', 1900, ['mid', 'high'], ALL_U),
+    row('Samsung', '2 TB', '990 EVO Plus NVMe', 3500, ['high'], ALL_U),
+  ],
+};
+
+// PC genérica que se muestra cuando no hay combinación exacta
+const FALLBACK = {
+  cpu: row('Intel', 'Core i5', '12400', 4200),
+  gpu: row('Procesador', 'Integrada', 'Ya viene incluida', 0),
+  ram: row('Kingston', '16 GB', 'DDR4 3200 MHz', 3200),
+  ssd: row('WD', '1 TB', 'Blue SN580 NVMe', 1500),
+};
+
+const PARTS = [
+  ['cpu', '🧠', 'Procesador'],
+  ['gpu', '🎮', 'Tarjeta de video'],
+  ['ram', '⚡', 'Memoria RAM'],
+  ['ssd', '💾', 'Almacenamiento'],
+];
+
+const OPTIONS = {
+  use: [
+    { id: 'gaming', icon: '🎮', label: 'Jugar', hint: 'Videojuegos sin trabas' },
+    { id: 'work', icon: '💻', label: 'Trabajar / Estudiar', hint: 'Tareas, clases y oficina' },
+    { id: 'basic', icon: '🌐', label: 'Uso básico', hint: 'Internet, videos y chats' },
+  ],
+  budget: [
+    { id: 'eco', icon: '🪙', label: 'Económico', hint: 'Cuidando cada peso' },
+    { id: 'mid', icon: '⚖️', label: 'Intermedio', hint: 'Buen equilibrio' },
+    { id: 'high', icon: '🚀', label: 'Alto', hint: 'Lo mejor para rendir más' },
+  ],
+};
+
+/* =====================================================================
+   2. FORMATO (solo capa de render)
+   ===================================================================== */
+const mxn = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN', maximumFractionDigits: 0 });
+const slug = s => s.toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '')
+  .replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '');
+const labelOf = (key, id) => (OPTIONS[key].find(o => o.id === id) || { label: '' }).label.toLowerCase();
+
+/* =====================================================================
+   3. MOTOR DE RECOMENDACIÓN
+   ===================================================================== */
+const pick = list => list[Math.floor(Math.random() * list.length)];
+const fits = (item, budget, use) => item.t.includes(budget) && item.u.includes(use);
+const keyOf = b => PARTS.map(([k]) => `${b[k].brand}${b[k].big}${b[k].detail}`).join('|');
+const totalOf = b => PARTS.reduce((sum, [k]) => sum + b[k].price, 0);
+
+function pickBuild(use, budget) {
+  const cpu = pick(DB.cpu.filter(p => fits(p, budget, use)));
+  if (!cpu) return null;
+  // Sin gráficos integrados en el procesador, la tarjeta de video es obligatoria
+  const gpu = pick(DB.gpu.filter(p => fits(p, budget, use) && (cpu.igpu || !p.integrated)));
+  // La RAM debe ser compatible con la plataforma del procesador (DDR4 o DDR5)
+  const ram = pick(DB.ram.filter(p => fits(p, budget, use) && p.type === cpu.ram));
+  const ssd = pick(DB.ssd.filter(p => fits(p, budget, use)));
+  return gpu && ram && ssd ? { cpu, gpu, ram, ssd } : null;
+}
+
+function recommend(use, budget, lastKey = '') {
+  let build = null;
+  try {
+    for (let i = 0; i < 8; i++) {            // evita repetir la misma combinación seguida
+      const next = pickBuild(use, budget);
+      if (!next) break;
+      build = next;
+      if (keyOf(next) !== lastKey) break;
+    }
+  } catch (err) {
+    console.error(err);
+    build = null;
+  }
+  return build ? { ...build, fallback: false } : { ...FALLBACK, fallback: true };
+}
+
+/* =====================================================================
+   4. ESTADO Y VISTAS
+   ===================================================================== */
+const $ = (sel, root = document) => root.querySelector(sel);
+const $$ = (sel, root = document) => [...root.querySelectorAll(sel)];
+const state = { use: null, budget: null, last: '', timer: null };
+
+function show(name) {
+  $$('.view').forEach(v => {
+    const on = v.dataset.view === name;
+    v.hidden = !on;
+    v.classList.toggle('active', on);
+  });
+  const title = $(`.view[data-view="${name}"] .title`);
+  if (title) title.focus({ preventScroll: true });
+  window.scrollTo({ top: 0 });
+}
+
+function syncNext() {
+  $('[data-action="next-use"]').disabled = !state.use;
+  $('[data-action="next-budget"]').disabled = !state.budget;
+}
+
+function renderOptions(key) {
+  $(`#opts-${key}`).innerHTML = OPTIONS[key].map(o => `
+    <button type="button" class="opt" data-key="${key}" data-value="${o.id}" aria-pressed="false">
+      <span class="opt-icon" aria-hidden="true">${o.icon}</span>
+      <span class="opt-text"><strong>${o.label}</strong><small>${o.hint}</small></span>
+    </button>`).join('');
+}
+
+function choose(key, value) {
+  state[key] = value;
+  $$(`.opt[data-key="${key}"]`).forEach(b => b.setAttribute('aria-pressed', String(b.dataset.value === value)));
+  syncNext();
+}
+
+function reset() {
+  clearTimeout(state.timer);                 // cancela un análisis en curso
+  Object.assign(state, { use: null, budget: null, last: '' });
+  $$('.opt').forEach(b => b.setAttribute('aria-pressed', 'false'));
+  syncNext();
+  show('welcome');
+}
+
+function analyze() {
+  if (!state.use || !state.budget) return;
+  show('loading');
+  clearTimeout(state.timer);
+  state.timer = setTimeout(() => showResults(false), 1500 + Math.random() * 500);
+}
+
+function showResults(reroll) {
+  const build = recommend(state.use, state.budget, reroll ? state.last : '');
+  state.last = keyOf(build);
+
+  $('#summary').textContent = build.fallback
+    ? 'No encontré una combinación exacta, pero esta PC equilibrada te va a funcionar muy bien.'
+    : `Para ${labelOf('use', state.use)}, con presupuesto ${labelOf('budget', state.budget)}.`;
+
+  $('#cards').innerHTML = PARTS.map(([k, icon, name]) => {
+    const p = build[k];
+    const link = p.price
+      ? `<a class="ml" href="https://listado.mercadolibre.com.mx/${slug(`${p.brand} ${p.big} ${p.detail}`)}" target="_blank" rel="noopener">Ver en Mercado Libre</a>`
+      : '';
+    return `
+      <article class="card">
+        <span class="part-icon" aria-hidden="true">${icon}</span>
+        <h3>${name}</h3>
+        <p class="maker">${p.brand}</p>
+        <p class="big">${p.big}</p>
+        <p class="detail">${p.detail}</p>
+        <p class="price">${p.price ? mxn.format(p.price) : 'Incluida'}</p>
+        ${link}
+      </article>`;
+  }).join('');
+
+  $('#total').textContent = mxn.format(totalOf(build));
+  show('results');
+}
+
+/* =====================================================================
+   5. TEMA CAMALEÓN
+   ===================================================================== */
+const root = document.documentElement;
+const media = window.matchMedia('(prefers-color-scheme: light)');
+const currentTheme = () => root.dataset.theme || (media.matches ? 'light' : 'dark');
+
+function paintThemeButton() {
+  const light = currentTheme() === 'light';
+  const btn = $('#theme');
+  btn.textContent = light ? '🌙' : '☀️';
+  btn.setAttribute('aria-label', light ? 'Cambiar a tema oscuro' : 'Cambiar a tema claro');
+}
+
+function toggleTheme() {
+  const next = currentTheme() === 'light' ? 'dark' : 'light';
+  root.dataset.theme = next;
+  try { localStorage.setItem('pcr-theme', next); } catch (e) { /* sin almacenamiento */ }
+  paintThemeButton();
+}
+
+/* =====================================================================
+   6. EVENTOS E INICIO
+   ===================================================================== */
+const actions = {
+  reset,
+  theme: toggleTheme,
+  start: () => show('use'),
+  'back-use': () => show('welcome'),
+  'next-use': () => { if (state.use) show('budget'); },
+  'back-budget': () => show('use'),
+  'next-budget': analyze,
+  other: () => showResults(true),
+};
+
+document.addEventListener('click', e => {
+  const btn = e.target.closest('button');
+  if (!btn || btn.disabled) return;
+  e.preventDefault();                        // nunca se recarga la página
+  if (btn.classList.contains('opt')) return choose(btn.dataset.key, btn.dataset.value);
+  const run = actions[btn.dataset.action];
+  if (run) run();
+});
+
+function init() {
+  try {
+    const saved = localStorage.getItem('pcr-theme');
+    if (saved === 'light' || saved === 'dark') root.dataset.theme = saved;
+  } catch (e) { /* sin almacenamiento */ }
+  media.addEventListener('change', paintThemeButton);
+  renderOptions('use');
+  renderOptions('budget');
+  syncNext();
+  paintThemeButton();
+}
+
+init();
